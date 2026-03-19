@@ -1,0 +1,6 @@
+streamlit
+groq
+requests
+jira
+python-dotenv
+chromadb
