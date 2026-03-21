@@ -2,21 +2,36 @@ import streamlit as st
 import os
 import json
 import sys
+import importlib.util
 from dotenv import load_dotenv
 from groq import Groq
 
-# Add subdirectories to path to reuse existing modules
+# Function to load a module from a specific file path
+def load_module(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+# Add subdirectories to path for internal imports within the modules
 sys.path.append(os.path.join(os.getcwd(), "gc agent"))
 sys.path.append(os.path.join(os.getcwd(), "Jira AI Agent"))
 
-# Import existing handlers and clients
+# Load modules uniquely to avoid collisions
 try:
-    from actions import ActionHandler as CalendarHandler
+    calendar_actions = load_module("calendar_actions", os.path.join("gc agent", "actions.py"))
+    jira_actions = load_module("jira_actions", os.path.join("Jira AI Agent", "actions.py"))
+    
+    CalendarHandler = calendar_actions.ActionHandler
+    jira_dispatch = jira_actions.dispatch
+    
+    # These are unique names so standard import is fine
     import jira_client
-    from actions import dispatch as jira_dispatch
     from vector_store import sync_project_issues
-except ImportError as e:
-    st.error(f"Mapping error: {e}. Ensure you run this from the project root.")
+except Exception as e:
+    st.error(f"Import Error: {e}. Ensure you are in the project root directory.")
+    st.stop()
 
 load_dotenv("gc agent/.env") # Load common keys from one of the .env files
 
