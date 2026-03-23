@@ -31,9 +31,17 @@ except Exception as e:
     st.error(f"Import Error: {e}. Ensure you are in the project root directory.")
     st.stop()
 
-load_dotenv("gc agent/.env")
+# Load environment variables from both sub-agents
+load_dotenv(os.path.join("gc agent", ".env"))
+load_dotenv(os.path.join("Jira AI Agent", ".env"))
 
 st.set_page_config(page_title="Master AI Agent", page_icon="🧠", layout="wide")
+
+# Verify Google Calendar Credentials path
+GC_CREDS_PATH = os.path.join(os.getcwd(), "gc agent", "credentials.json")
+if not os.path.exists(GC_CREDS_PATH):
+    st.error(f"⚠️ **Google Calendar Error:** `credentials.json` not found at `{GC_CREDS_PATH}`.")
+    st.info("Please place your Google Cloud credentials file in the 'gc agent' folder.")
 
 st.markdown("""
 <style>

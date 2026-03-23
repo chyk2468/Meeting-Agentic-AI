@@ -7,6 +7,11 @@ from googleapiclient.discovery import build
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
+# Define paths relative to this file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TOKEN_PATH = os.path.join(BASE_DIR, 'token.json')
+CREDENTIALS_PATH = os.path.join(BASE_DIR, 'credentials.json')
+
 def get_calendar_service():
     """
     Authenticates the user and returns the Google Calendar service object.
@@ -16,26 +21,26 @@ def get_calendar_service():
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(TOKEN_PATH):
+        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
     
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            if not os.path.exists('credentials.json'):
+            if not os.path.exists(CREDENTIALS_PATH):
                 raise FileNotFoundError(
-                    "credentials.json not found. Please follow the instructions to "
+                    f"credentials.json not found at {CREDENTIALS_PATH}. Please follow the instructions to "
                     "download it from Google Cloud Console."
                 )
             
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                CREDENTIALS_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
         
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open(TOKEN_PATH, 'w') as token:
             token.write(creds.to_json())
 
     try:
