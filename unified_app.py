@@ -3,41 +3,38 @@ import os
 import json
 import sys
 import importlib.util
+from datetime import datetime
 from dotenv import load_dotenv
 from groq import Groq
 
-# Function to load a module from a specific file path
+# Function to safely load a module to avoid Streamlit rerun issues and name collisions
 def load_module(module_name, file_path):
+    if module_name in sys.modules:
+        return sys.modules[module_name]
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
 
-# Add subdirectories to path for internal imports within the modules
+# Add subdirectories to path
 sys.path.append(os.path.join(os.getcwd(), "gc agent"))
 sys.path.append(os.path.join(os.getcwd(), "Jira AI Agent"))
 
-# Load modules uniquely to avoid collisions
 try:
     calendar_actions = load_module("calendar_actions", os.path.join("gc agent", "actions.py"))
     jira_actions = load_module("jira_actions", os.path.join("Jira AI Agent", "actions.py"))
     
     CalendarHandler = calendar_actions.ActionHandler
     jira_dispatch = jira_actions.dispatch
-    
-    # These are unique names so standard import is fine
-    import jira_client
-    from vector_store import sync_project_issues
 except Exception as e:
     st.error(f"Import Error: {e}. Ensure you are in the project root directory.")
     st.stop()
 
-load_dotenv("gc agent/.env") # Load common keys from one of the .env files
+load_dotenv("gc agent/.env")
 
 st.set_page_config(page_title="Master AI Agent", page_icon="🧠", layout="wide")
 
-# --- Custom CSS ---
 st.markdown("""
 <style>
     .reportview-container { background: #0e1117; }
@@ -52,79 +49,100 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Logic ---
 class MasterAgent:
     def __init__(self, api_key):
         self.client = Groq(api_key=api_key)
         self.model = "llama-3.3-70b-versatile"
         self.prompt_template = """
-You are an intelligent Task and Event Extraction Agent.
-Your job is to analyze raw user input (such as meeting transcripts, notes, or conversations) and extract two categories of actionable items:
+You are a Master Agentic AI responsible for understanding input, planning actions, deciding execution, and generating structured outputs for downstream agents (Jira Agent and Google Calendar Agent).
 
-1. Project-related tasks → for Jira Agent
-2. Time-based events/reminders → for Google Calendar Agent
+---
+🧠 STEP 1: UNDERSTAND & PLAN
+Analyze the input and determine actions, tasks/events, and check for ambiguity.
+
+⚙️ STEP 2: DECIDE EXECUTION
+Set "auto_execute": true if confidence is high and data is clear.
+Set "auto_execute": false if ambiguity exists.
+
+📦 STEP 3: EXTRACT STRUCTURED DATA
+Extract Jira tasks and Calendar events.
+
+📊 STEP 4: ASSIGN CONFIDENCE
+Assign 0 to 1 confidence to each item.
+
+🔁 STEP 5: SELF-REFLECTION
+Check for missed items.
 
 ---
 OUTPUT FORMAT (STRICT JSON ONLY):
 {
+"plan": {
+"requires_clarification": false,
+"auto_execute": true,
+"summary": "short explanation"
+},
 "jira_tasks": [
 {
 "title": "string",
 "description": "string",
 "priority": "low | medium | high",
 "assignee": "string or null",
-"due_date": "YYYY-MM-DD or null"
+"due_date": "YYYY-MM-DD or null",
+"confidence": 0.0
 }
 ],
 "calendar_events": [
 {
 "title": "string",
-"datetime": "YYYY-MM-DD HH:MM",
+"datetime": "YYYY-MM-DD HH:MM or null",
 "duration_minutes": integer,
 "participants": ["list of names"],
-"description": "string"
+"description": "string",
+"confidence": 0.0
 }
-]
+],
+"reflection": {
+"missed_items": []
+},
+"clarification_questions": []
 }
 
 ---
-EXTRACTION RULES:
-JIRA TASKS:
-* Include development work, bugs, features, assignments, or deliverables
-* Infer priority:
-  * urgent / ASAP → high
-  * near deadline → medium
-  * normal → low
-
-CALENDAR EVENTS:
-* Include meetings, calls, discussions, reminders, and important dates
-* If duration is not specified, assume 30 minutes
-
----
-IMPORTANT:
-* Do NOT mix tasks and events
-* Do NOT hallucinate missing information
-* If date/time is missing → use null
-* If assignee is not mentioned → use null
-* If participants are not mentioned → use empty list []
-* If both task and meeting exist in one sentence → split into both
+RULES:
+* DO NOT mix tasks and events
+* DO NOT hallucinate missing data
+* If data is unclear → add a question in "clarification_questions"
+* If date/time is missing → null
+* If assignee is missing → null
+* If participants are missing → []
+* Default duration → 30 minutes
+* Split task + meeting if both exist in one sentence
+* HIGH priority → urgent/ASAP
+* MEDIUM → deadline-based
+* LOW → general
 """
 
     def parse_input(self, user_input):
-        completion = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": self.prompt_template},
-                {"role": "user", "content": user_input}
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
-        return json.loads(completion.choices[0].message.content)
+        current_date = datetime.now().strftime("%A, %B %d, %Y")
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.prompt_template},
+                    {"role": "user", "content": f"Context: Today's date is {current_date}.\n\nInput: {user_input}"}
+                ],
+                temperature=0.1,
+                response_format={"type": "json_object"}
+            )
+            raw_response = completion.choices[0].message.content
+            return json.loads(raw_response)
+        except json.JSONDecodeError:
+            return {"error": "Failed to parse JSON from the model."}
+        except Exception as e:
+            return {"error": str(e)}
 
-# --- UI ---
-st.title("🧠 Master Task & Event Agent")
-st.markdown("Paste meeting transcripts or notes below to automatically route tasks to Jira and events to Google Calendar.")
+st.title("🧠 Master Agentic AI")
+st.markdown("Autonomous Task Extraction & Action Planning")
 
 with st.sidebar:
     st.header("⚙️ Configuration")
@@ -143,71 +161,132 @@ if not groq_key:
 
 agent = MasterAgent(groq_key)
 
-raw_input = st.text_area("📋 Raw Input (Transcript/Notes)", height=250, placeholder="Example: Meeting with Yash today at 5pm to discuss the login bug. Yash needs to fix the CSS issues by Friday ASAP.")
+raw_input = st.text_area("📋 Raw Input (Transcript/Notes)", height=200, placeholder="Example: Yash and I had a meeting. He needs to fix the login bug ASAP. Also schedule a follow-up with him tomorrow at 3 PM.")
 
-if st.button("🚀 Process & Extract", use_container_width=True):
-    if raw_input:
-        with st.spinner("Analyzing and extracting..."):
+if st.button("🚀 Analyze & Plan", use_container_width=True):
+    if raw_input.strip():
+        with st.spinner("Agent is thinking, planning, and reflecting..."):
             extracted = agent.parse_input(raw_input)
-            st.session_state.extracted_data = extracted
-            st.rerun()
+            if "error" in extracted:
+                st.error(f"Agent Error: {extracted['error']}")
+            else:
+                st.session_state.extracted_data = extracted
+                st.session_state.execution_results = []
+                st.rerun()
 
 if "extracted_data" in st.session_state:
     data = st.session_state.extracted_data
+    plan = data.get("plan", {})
     
+    # --- Planning & Reflection Section ---
+    with st.expander("📝 **Agent's Internal Plan & Reflection**", expanded=True):
+        col_p1, col_p2 = st.columns([2, 1])
+        with col_p1:
+            st.write(f"**Summary:** {plan.get('summary', 'No summary provided.')}")
+            if data.get("clarification_questions"):
+                st.warning("❓ **Clarification Needed:**")
+                for q in data["clarification_questions"]:
+                    st.write(f"- {q}")
+        with col_p2:
+            auto_exec = plan.get("auto_execute", False)
+            st.metric("Auto-Execute Status", "✅ Ready" if auto_exec else "❌ Blocked")
+            st.write(f"**Requires Clarification:** {'Yes' if plan.get('requires_clarification') else 'No'}")
+        
+        missed = data.get("reflection", {}).get("missed_items", [])
+        if missed:
+            st.info(f"🔍 **Self-Reflection (Possible Misses):** {', '.join(missed)}")
+
+    # --- Auto-Execution Button ---
+    if plan.get("auto_execute") and not data.get("requires_clarification"):
+        st.success("✨ The Agent has high confidence and recommends Auto-Execution.")
+        if st.button("⚡ Approve & Execute All Automatically", type="primary", use_container_width=True):
+            with st.spinner("Executing all tasks and events..."):
+                results = []
+                # Execute Jira Tasks
+                for task in data.get("jira_tasks", []):
+                    params = {"summary": task['title'], "description": task['description'], "priority": task['priority'].capitalize(), "issuetype": "Task"}
+                    if task.get('due_date'): params["due_date"] = task['due_date']
+                    try:
+                        res = jira_dispatch("create_issue", params, j_domain, j_email, j_token, j_project)
+                        results.append(f"✅ **Jira:** Created '{task['title']}'")
+                    except Exception as e:
+                        results.append(f"❌ **Jira Error:** Failed to create '{task['title']}' - {str(e)}")
+                
+                # Execute Calendar Events
+                handler = CalendarHandler()
+                for event in data.get("calendar_events", []):
+                    if not event.get('datetime'):
+                        results.append(f"⚠️ **Calendar:** Skipped '{event['title']}' (Missing Date/Time)")
+                        continue
+                    try:
+                        res = handler.execute({"action": "create_event", "title": event['title'], "time": event['datetime']})
+                        results.append(f"✅ **Calendar:** {res}")
+                    except Exception as e:
+                        results.append(f"❌ **Calendar Error:** Failed to schedule '{event['title']}' - {str(e)}")
+                
+                st.session_state.execution_results = results
+                st.rerun()
+
+    # Show execution results if any
+    if st.session_state.get("execution_results"):
+        st.divider()
+        st.subheader("📊 Execution Results")
+        for res in st.session_state.execution_results:
+            st.markdown(res)
+
+    st.divider()
+
+    # --- Manual Review & Execution ---
     col1, col2 = st.columns(2)
     
     with col1:
         st.header("🎫 Jira Tasks")
         tasks = data.get("jira_tasks", [])
-        if not tasks:
-            st.info("No Jira tasks detected.")
+        if not tasks: st.info("No tasks found.")
         for i, task in enumerate(tasks):
-            with st.container():
-                st.markdown(f"### {task['title']}")
-                st.write(f"**Priority:** {task['priority'].upper()}")
-                st.write(f"**Description:** {task['description']}")
-                if st.button(f"Push to Jira", key=f"jira_{i}"):
-                    # Map to Jira Agent format
-                    params = {
-                        "summary": task['title'],
-                        "description": task['description'],
-                        "priority": task['priority'].capitalize(),
-                        "issuetype": "Task"
-                    }
+            with st.container(border=True):
+                st.subheader(task['title'])
+                conf = task.get('confidence', 0)
+                st.caption(f"Confidence: {conf*100:.0f}% | Priority: {task.get('priority', 'medium').upper()}")
+                st.write(task.get('description', ''))
+                if task.get('assignee'): st.write(f"👤 Assignee: {task['assignee']}")
+                if task.get('due_date'): st.write(f"📅 Due: {task['due_date']}")
+                
+                if st.button(f"Push Task manually", key=f"jira_man_{i}"):
+                    params = {"summary": task['title'], "description": task.get('description', ''), "priority": task.get('priority', 'medium').capitalize(), "issuetype": "Task"}
                     if task.get('due_date'): params["due_date"] = task['due_date']
-                    
                     try:
                         res = jira_dispatch("create_issue", params, j_domain, j_email, j_token, j_project)
-                        st.success(f"Success!")
+                        st.success("Pushed to Jira!")
                         st.markdown(res)
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+                    except Exception as e: st.error(f"Error: {e}")
 
     with col2:
         st.header("📅 Calendar Events")
         events = data.get("calendar_events", [])
-        if not events:
-            st.info("No calendar events detected.")
+        if not events: st.info("No events found.")
         for i, event in enumerate(events):
-            with st.container():
-                st.markdown(f"### {event['title']}")
-                st.write(f"**Time:** {event['datetime']}")
-                st.write(f"**Participants:** {', '.join(event['participants']) if event['participants'] else 'None'}")
-                if st.button(f"Add to Calendar", key=f"cal_{i}"):
-                    try:
-                        # Re-init handler to ensure fresh auth
-                        handler = CalendarHandler()
-                        action = {
-                            "action": "create_event",
-                            "title": event['title'],
-                            "time": event['datetime']
-                        }
-                        res = handler.execute(action)
-                        st.success(res)
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+            with st.container(border=True):
+                st.subheader(event['title'])
+                conf = event.get('confidence', 0)
+                st.caption(f"Confidence: {conf*100:.0f}%")
+                st.write(f"⏰ {event.get('datetime') or '⚠️ Time not specified'}")
+                parts = event.get('participants', [])
+                st.write(f"👥 {', '.join(parts) if parts else 'No participants'}")
+                
+                if st.button(f"Add Event manually", key=f"cal_man_{i}"):
+                    if not event.get('datetime'):
+                        st.error("Cannot add event without a valid date/time.")
+                    else:
+                        try:
+                            handler = CalendarHandler()
+                            res = handler.execute({"action": "create_event", "title": event['title'], "time": event['datetime']})
+                            st.success(res)
+                        except Exception as e: st.error(f"Error: {e}")
 
-    if st.button("Clear Results"):
+    st.divider()
+    if st.button("Reset Session", use_container_width=True):
         del st.session_state.extracted_data
+        if "execution_results" in st.session_state:
+            del st.session_state.execution_results
         st.rerun()
