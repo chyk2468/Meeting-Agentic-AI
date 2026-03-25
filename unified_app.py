@@ -24,9 +24,13 @@ sys.path.append(os.path.join(os.getcwd(), "Jira AI Agent"))
 try:
     calendar_actions = load_module("calendar_actions", os.path.join("gc agent", "actions.py"))
     jira_actions = load_module("jira_actions", os.path.join("Jira AI Agent", "actions.py"))
+    jira_agent_module = load_module("jira_agent", os.path.join("Jira AI Agent", "agent.py"))
+    calendar_agent_module = load_module("calendar_agent", os.path.join("gc agent", "agent.py"))
     
     CalendarHandler = calendar_actions.ActionHandler
     jira_dispatch = jira_actions.dispatch
+    jira_parse = jira_agent_module.parse_task
+    CalendarAgent = calendar_agent_module.CalendarAgent
 except Exception as e:
     st.error(f"Import Error: {e}. Ensure you are in the project root directory.")
     st.stop()
@@ -35,7 +39,7 @@ except Exception as e:
 load_dotenv(os.path.join("gc agent", ".env"))
 load_dotenv(os.path.join("Jira AI Agent", ".env"))
 
-st.set_page_config(page_title="Master AI Agent", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="Nexus AI Master", page_icon="🧠", layout="wide")
 
 # Verify Google Calendar Credentials path
 GC_CREDS_PATH = os.path.join(os.getcwd(), "gc agent", "credentials.json")
@@ -68,6 +72,85 @@ logging.basicConfig(
 
 def audit_log(action, status, details):
     logging.info(f"ACTION: {action} | STATUS: {status} | DETAILS: {details}")
+
+class RouterAgent:
+    def __init__(self, api_key):
+        self.client = Groq(api_key=api_key)
+        self.model = "llama-3.3-70b-versatile"
+        self.prompt_template = """
+SYSTEM: NEXUS AI — CONVERSATIONAL AGENTIC ROUTER
+
+You are NexusAI, a conversational agentic AI system.
+You behave like a natural chatbot for the user, BUT internally you are a router and orchestrator that decides which specialized agent to use:
+* Jira Agent → for tasks, bugs, project updates, assignments
+* Google Calendar Agent → for meetings, schedules, events
+* Task Extraction Mode → for long transcripts or notes
+
+---
+🧠 CORE BEHAVIOR
+1. Understand user intent from natural conversation
+2. Decide the correct mode:
+
+MODES:
+* "chat" → normal conversation
+* "jira_query" → ask Jira Agent directly
+* "calendar_query" → ask Calendar Agent directly
+* "extraction" → run full task + event extraction pipeline
+
+---
+⚙️ ROUTING RULES
+👉 Use "calendar_query" IF user asks:
+* upcoming meetings
+* schedule
+* events
+* availability
+* reminders
+
+👉 Use "jira_query" IF user asks:
+* project status
+* bugs
+* tasks
+* tickets
+* assignments
+* progress updates
+
+👉 Use "extraction" IF input is:
+* long paragraph
+* meeting transcript
+* multiple actions mixed
+
+👉 Otherwise:
+* use "chat"
+
+---
+📤 OUTPUT FORMAT (STRICT JSON ONLY)
+{
+"mode": "chat | jira_query | calendar_query | extraction",
+"response": "natural language reply to user",
+"agent_payload": {
+"query": "string (for jira/calendar agent)",
+"filters": {}
+}
+}
+"""
+
+    def route(self, user_input):
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.prompt_template},
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.1,
+                response_format={"type": "json_object"}
+            )
+            raw_response = completion.choices[0].message.content
+            audit_log("ROUTER", "SUCCESS", f"Mode determined: {json.loads(raw_response).get('mode')}")
+            return json.loads(raw_response)
+        except Exception as e:
+            audit_log("ROUTER", "FAILED", str(e))
+            return {"mode": "chat", "response": f"Error in routing: {str(e)}", "agent_payload": {}}
 
 class MasterAgent:
     def __init__(self, api_key):
@@ -175,19 +258,68 @@ if not groq_key:
     st.stop()
 
 agent = MasterAgent(groq_key)
+router = RouterAgent(groq_key)
 
-raw_input = st.text_area("📋 Raw Input (Transcript/Notes)", height=200, placeholder="Example: Yash and I had a meeting. He needs to fix the login bug ASAP. Also schedule a follow-up with him tomorrow at 3 PM.")
+raw_input = st.text_area("💬 Conversational Input", height=150, placeholder="Ask me anything, or paste a transcript for extraction...")
 
-if st.button("🚀 Analyze & Plan", use_container_width=True):
+if st.button("🚀 Send to Nexus", use_container_width=True):
     if raw_input.strip():
-        with st.spinner("Agent is thinking, planning, and reflecting..."):
-            extracted = agent.parse_input(raw_input)
-            if "error" in extracted:
-                st.error(f"Agent Error: {extracted['error']}")
-            else:
-                st.session_state.extracted_data = extracted
-                st.session_state.execution_results = []
-                st.rerun()
+        with st.spinner("Nexus is routing your request..."):
+            route_data = router.route(raw_input)
+            st.session_state.route_data = route_data
+            
+            mode = route_data.get("mode", "chat")
+            
+            if mode == "extraction":
+                with st.spinner("Running deep extraction..."):
+                    extracted = agent.parse_input(raw_input)
+                    if "error" in extracted:
+                        st.error(f"Extraction Error: {extracted['error']}")
+                    else:
+                        st.session_state.extracted_data = extracted
+                        st.session_state.execution_results = []
+                        st.rerun()
+            
+            elif mode == "jira_query":
+                with st.spinner("Consulting Jira Agent..."):
+                    query = route_data.get("agent_payload", {}).get("query", raw_input)
+                    # We can use jira_parse to get actions and then execute them
+                    actions = jira_parse(query, groq_key)
+                    results = []
+                    for action in actions:
+                        res = jira_dispatch(action['action'], action['params'], j_domain, j_email, j_token, j_project)
+                        results.append(res)
+                    st.session_state.query_results = results
+                    st.rerun()
+                    
+            elif mode == "calendar_query":
+                with st.spinner("Consulting Calendar Agent..."):
+                    query = route_data.get("agent_payload", {}).get("query", raw_input)
+                    cal_agent = CalendarAgent()
+                    actions_json = cal_agent.get_action(query)
+                    handler = CalendarHandler()
+                    results = []
+                    for action in actions_json.get("actions", []):
+                        res = handler.execute(action)
+                        results.append(res)
+                    st.session_state.query_results = results
+                    st.rerun()
+
+# --- Display Results ---
+
+if "route_data" in st.session_state:
+    route = st.session_state.route_data
+    if route['mode'] != "extraction":
+        st.chat_message("assistant").write(route.get("response", "Processing your request..."))
+        
+        if "query_results" in st.session_state:
+            for res in st.session_state.query_results:
+                st.info(res)
+        
+        if st.button("Clear Conversation"):
+            del st.session_state.route_data
+            if "query_results" in st.session_state: del st.session_state.query_results
+            st.rerun()
 
 if "extracted_data" in st.session_state:
     data = st.session_state.extracted_data
