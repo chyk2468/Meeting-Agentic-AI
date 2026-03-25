@@ -57,39 +57,53 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+import logging
+
+# Configure Audit Logger
+logging.basicConfig(
+    filename='nexus_audit.log',
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s'
+)
+
+def audit_log(action, status, details):
+    logging.info(f"ACTION: {action} | STATUS: {status} | DETAILS: {details}")
+
 class MasterAgent:
     def __init__(self, api_key):
         self.client = Groq(api_key=api_key)
         self.model = "llama-3.3-70b-versatile"
         self.prompt_template = """
-You are a Master Agentic AI responsible for understanding input, planning actions, deciding execution, and generating structured outputs for downstream agents (Jira Agent and Google Calendar Agent).
+SYSTEM: NEXUS AI — MASTER ORCHESTRATOR AGENT
+
+You are NexusAI, a fully autonomous, agentic AI orchestration system.
+You are NOT a chatbot. You are a self-driving workflow engine.
 
 ---
-🧠 STEP 1: UNDERSTAND & PLAN
-Analyze the input and determine actions, tasks/events, and check for ambiguity.
+🧠 STEP 1: UNDERSTAND & PLAN (COGNITIVE LAYER)
+Analyze input, produce intent summary, and identify Jira Tasks vs Calendar Events.
 
-⚙️ STEP 2: DECIDE EXECUTION
-Set "auto_execute": true if confidence is high and data is clear.
-Set "auto_execute": false if ambiguity exists.
+⚙️ STEP 2: DECIDE EXECUTION (DECISION LAYER)
+Set "auto_execute": true/false and "requires_clarification": true/false. Generate questions if needed.
 
-📦 STEP 3: EXTRACT STRUCTURED DATA
-Extract Jira tasks and Calendar events.
+📦 STEP 3: STRUCTURED EXTRACTION (TASK AGENT OUTPUT)
+Generate "jira_packet" and "calendar_packet".
 
-📊 STEP 4: ASSIGN CONFIDENCE
-Assign 0 to 1 confidence to each item.
+📊 STEP 4: CONFIDENCE SCORING
+Assign confidence 0.0 to 1.0 to each item.
 
 🔁 STEP 5: SELF-REFLECTION
-Check for missed items.
+Detect missed tasks or events.
 
 ---
 OUTPUT FORMAT (STRICT JSON ONLY):
 {
 "plan": {
+"summary": "string",
 "requires_clarification": false,
-"auto_execute": true,
-"summary": "short explanation"
+"auto_execute": true
 },
-"jira_tasks": [
+"jira_packet": [
 {
 "title": "string",
 "description": "string",
@@ -99,12 +113,12 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 "confidence": 0.0
 }
 ],
-"calendar_events": [
+"calendar_packet": [
 {
 "title": "string",
 "datetime": "YYYY-MM-DD HH:MM or null",
-"duration_minutes": integer,
-"participants": ["list of names"],
+"duration_minutes": 30,
+"participants": [],
 "description": "string",
 "confidence": 0.0
 }
@@ -116,18 +130,11 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 }
 
 ---
-RULES:
-* DO NOT mix tasks and events
-* DO NOT hallucinate missing data
-* If data is unclear → add a question in "clarification_questions"
-* If date/time is missing → null
-* If assignee is missing → null
-* If participants are missing → []
-* Default duration → 30 minutes
-* Split task + meeting if both exist in one sentence
-* HIGH priority → urgent/ASAP
-* MEDIUM → deadline-based
-* LOW → general
+📌 RULES:
+* NEVER mix tasks and events.
+* Default duration = 30 mins.
+* Split combined sentences.
+* Priority: HIGH (ASAP), MEDIUM (Deadline), LOW (General).
 """
 
     def parse_input(self, user_input):
@@ -143,14 +150,14 @@ RULES:
                 response_format={"type": "json_object"}
             )
             raw_response = completion.choices[0].message.content
+            audit_log("PARSE_INPUT", "SUCCESS", f"Input length: {len(user_input)}")
             return json.loads(raw_response)
-        except json.JSONDecodeError:
-            return {"error": "Failed to parse JSON from the model."}
         except Exception as e:
+            audit_log("PARSE_INPUT", "FAILED", str(e))
             return {"error": str(e)}
 
-st.title("🧠 Master Agentic AI")
-st.markdown("Autonomous Task Extraction & Action Planning")
+st.title("🚀 Nexus AI: Master Orchestrator")
+st.markdown("Autonomous Workflow Engine for Jira & Calendar")
 
 with st.sidebar:
     st.header("⚙️ Configuration")
@@ -211,25 +218,30 @@ if "extracted_data" in st.session_state:
             with st.spinner("Executing all tasks and events..."):
                 results = []
                 # Execute Jira Tasks
-                for task in data.get("jira_tasks", []):
+                for task in data.get("jira_packet", []):
                     params = {"summary": task['title'], "description": task['description'], "priority": task['priority'].capitalize(), "issuetype": "Task"}
                     if task.get('due_date'): params["due_date"] = task['due_date']
                     try:
                         res = jira_dispatch("create_issue", params, j_domain, j_email, j_token, j_project)
+                        audit_log("EXECUTE_JIRA", "SUCCESS", task['title'])
                         results.append(f"✅ **Jira:** Created '{task['title']}'")
                     except Exception as e:
+                        audit_log("EXECUTE_JIRA", "FAILED", f"{task['title']} - {e}")
                         results.append(f"❌ **Jira Error:** Failed to create '{task['title']}' - {str(e)}")
                 
                 # Execute Calendar Events
                 handler = CalendarHandler()
-                for event in data.get("calendar_events", []):
+                for event in data.get("calendar_packet", []):
                     if not event.get('datetime'):
+                        audit_log("EXECUTE_CALENDAR", "SKIPPED", event['title'])
                         results.append(f"⚠️ **Calendar:** Skipped '{event['title']}' (Missing Date/Time)")
                         continue
                     try:
                         res = handler.execute({"action": "create_event", "title": event['title'], "time": event['datetime']})
+                        audit_log("EXECUTE_CALENDAR", "SUCCESS", event['title'])
                         results.append(f"✅ **Calendar:** {res}")
                     except Exception as e:
+                        audit_log("EXECUTE_CALENDAR", "FAILED", f"{event['title']} - {e}")
                         results.append(f"❌ **Calendar Error:** Failed to schedule '{event['title']}' - {str(e)}")
                 
                 st.session_state.execution_results = results
@@ -249,7 +261,7 @@ if "extracted_data" in st.session_state:
     
     with col1:
         st.header("🎫 Jira Tasks")
-        tasks = data.get("jira_tasks", [])
+        tasks = data.get("jira_packet", [])
         if not tasks: st.info("No tasks found.")
         for i, task in enumerate(tasks):
             with st.container(border=True):
@@ -265,13 +277,16 @@ if "extracted_data" in st.session_state:
                     if task.get('due_date'): params["due_date"] = task['due_date']
                     try:
                         res = jira_dispatch("create_issue", params, j_domain, j_email, j_token, j_project)
+                        audit_log("MANUAL_JIRA", "SUCCESS", task['title'])
                         st.success("Pushed to Jira!")
                         st.markdown(res)
-                    except Exception as e: st.error(f"Error: {e}")
+                    except Exception as e:
+                        audit_log("MANUAL_JIRA", "FAILED", f"{task['title']} - {e}")
+                        st.error(f"Error: {e}")
 
     with col2:
         st.header("📅 Calendar Events")
-        events = data.get("calendar_events", [])
+        events = data.get("calendar_packet", [])
         if not events: st.info("No events found.")
         for i, event in enumerate(events):
             with st.container(border=True):
@@ -289,8 +304,11 @@ if "extracted_data" in st.session_state:
                         try:
                             handler = CalendarHandler()
                             res = handler.execute({"action": "create_event", "title": event['title'], "time": event['datetime']})
+                            audit_log("MANUAL_CALENDAR", "SUCCESS", event['title'])
                             st.success(res)
-                        except Exception as e: st.error(f"Error: {e}")
+                        except Exception as e:
+                            audit_log("MANUAL_CALENDAR", "FAILED", f"{event['title']} - {e}")
+                            st.error(f"Error: {e}")
 
     st.divider()
     if st.button("Reset Session", use_container_width=True):
