@@ -1,41 +1,74 @@
 # Meeting Agentic AI
 
-A unified orchestrator that analyses meeting notes and routes actionable items to specialised Jira and Google Calendar agents.
+**Turn meeting notes into proposed Jira tasks and calendar events.**
 
-**Stack:** Python, Groq/Llama, Jira Cloud, Google Calendar
+[![GitHub](https://img.shields.io/badge/GitHub-Source-24292f?logo=github)](https://github.com/chyk2468/Meeting-Agentic-AI)
 
-![Meeting Orchestrator workflow](docs/readme-architecture.svg)
+## 1. Project Title & Tagline
 
-## Workflow
+Turn meeting notes into proposed Jira tasks and calendar events.
 
-1. Submit meeting notes or a transcript.
-2. The master agent extracts actions, dates, and follow-ups and prepares an execution plan.
-3. Jira-related items are routed to the Jira agent; time-based items are routed to the Calendar agent.
-4. The application returns extracted items, confidence information, and execution outcomes.
+## 2. Problem Statement
 
-## Repository layout
+Meeting follow-ups are easy to lose when decisions, owners, and deadlines stay buried in notes. This project routes extracted action items to specialised Jira and Calendar agents.
 
-- `unified_app.py`: unified entry point
-- `Jira AI Agent/`: Jira integration
-- `gc agent/`: Calendar integration
+## 3. Project Preview
 
-Module isolation matters because the specialist modules can contain files with the same names.
+Add a real screenshot or short GIF of the current interface and a before/after result.
 
-## Run
+[Open interactive architecture](architecture.html)
+
+## 4. Overview
+
+The project accepts source content, runs the configured workflow, and presents a result for review. The diagram below summarises the main stages.
+
+## 5. Key Features
+
+- Analyse meeting notes and identify action items.
+- Route ticket-related tasks to the Jira agent.
+- Route time-based follow-ups to the Calendar agent.
+- Return extracted items and action outcomes for review.
+
+## 6. Architecture / Workflow
+
+![Animated Meeting Agentic AI workflow](docs/animated-workflow.svg)
+
+Open the [interactive architecture explorer](architecture.html) to select a stage and inspect its role.
+
+## 7. Tech Stack
+
+Python, Groq/Llama, Jira Cloud, Google Calendar API, Streamlit
+
+## 8. Installation & Setup
 
 ```bash
 git clone https://github.com/chyk2468/Meeting-Agentic-AI.git
 cd Meeting-Agentic-AI
 ```
 
-Install the dependencies required by the bundled agent modules, configure Groq, Jira, and Google OAuth credentials, and launch the unified entry point:
+Install the dependencies required by the unified app and the bundled Jira and Calendar agent folders.
 
-```bash
-python unified_app.py
-```
+## 9. Usage
 
-Check the module-specific setup and credentials in each subfolder before running.
+Configure the model key, Jira credentials, and Google OAuth flow expected by the bundled modules, then run `python unified_app.py`. Verify owners, deadlines, and event times before creating external records.
 
-## Operational safety
+## 10. Project Structure
 
-Meeting summaries can be ambiguous. Review assignees, dates, and extracted action items before creating Jira tickets or calendar events. Do not put API keys, OAuth tokens, or meeting data containing sensitive information into version control.
+- `unified_app.py`: unified entry point
+- `Jira AI Agent/`: Jira agent module
+- `gc agent/`: Google Calendar agent module
+
+## 11. Results & Demo
+
+Add a demo using sample meeting notes and show the proposed Jira tasks and calendar events before any external changes are made.
+
+## 12. Future Enhancements
+
+- Add a review queue before write actions.
+- Improve extraction of owners, dates, and decisions.
+- Add tests for ambiguous notes and time zones.
+- Keep module configuration and dependencies documented separately.
+
+## 13. License
+
+Check the repository and each bundled module's licence. Keep API keys and OAuth tokens out of version control.
