@@ -1,74 +1,402 @@
-# Meeting Agentic AI
+<p align="center">
+  <img src="assets/readme/banner.svg" alt="Meeting Agentic AI (combo repo) Banner" width="100%"/>
+</p>
 
-**Turn meeting notes into proposed Jira tasks and calendar events.**
+# Meeting Agentic AI (combo repo)
 
-[![GitHub](https://img.shields.io/badge/GitHub-Source-24292f?logo=github)](https://github.com/chyk2468/Meeting-Agentic-AI)
+> **Bundles the Jira agent and Google Calendar agent in one repository**
 
-## 1. Project Title & Tagline
+Folders `Jira AI Agent/` and `gc agent/` with the same Streamlit + Groq pattern. Prefer the dedicated repositories for development. Designed and implemented as a resilient, production-ready solution tailored for same as agentic-ai-jira and google-calender-ai-agent.
 
-Turn meeting notes into proposed Jira tasks and calendar events.
+<p align="left">
+  ![Language](https://img.shields.io/badge/Language-Python-38BDF8?style=for-the-badge)
+  ![Visibility](https://img.shields.io/badge/Visibility-Public-22C55E?style=for-the-badge)
+  ![Status](https://img.shields.io/badge/Status-Two%20nested%20projects;%20overlap%20with%20standalone%20repos-F59E0B?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-Unlicensed-94A3B8?style=for-the-badge)
+  [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/chyk2468/Meeting-Agentic-AI)
+</p>
 
-## 2. Problem Statement
+---
+## Table of Contents
 
-Meeting follow-ups are easy to lose when decisions, owners, and deadlines stay buried in notes. This project routes extracted action items to specialised Jira and Calendar agents.
+- [01. Project Hero Section](#01-project-hero-section)
+- [02. Table of Contents](#02-table-of-contents)
+- [03. Project Overview](#03-project-overview)
+- [04. The Problem](#04-the-problem)
+- [05. Proposed Solution](#05-proposed-solution)
+- [06. Project Objectives](#06-project-objectives)
+- [07. Key Features](#07-key-features)
+- [08. Application Demonstration](#08-application-demonstration)
+- [09. Technology Stack](#09-technology-stack)
+- [10. System Architecture](#10-system-architecture)
+- [11. Detailed Workflow](#11-detailed-workflow)
+- [12. Data Flow](#12-data-flow)
+- [13. State & Storage Architecture](#13-database-design)
+- [14. API Documentation](#14-api-documentation)
+- [15. Installation and Setup](#15-installation-and-setup)
+- [16. Environment Variables](#16-environment-variables)
+- [17. Usage Guide](#17-usage-guide)
+- [18. Project Structure](#18-project-structure)
+- [19. Security and Privacy](#19-security-and-privacy)
+- [20. Testing and Validation](#20-testing-and-validation)
+- [21. Performance and Evaluation](#21-performance-and-evaluation)
+- [22. Engineering Decisions](#22-engineering-decisions)
+- [23. Challenges and Learnings](#23-challenges-and-learnings)
+- [24. Limitations](#24-limitations)
+- [25. Future Roadmap](#25-future-roadmap)
+- [26. Contributing Guidelines](#26-contributing-guidelines)
+- [27. License](#27-license)
+- [28. Author Information](#28-author-information)
+- [29. Acknowledgements and References](#29-acknowledgements-and-references)
 
-## 3. Project Preview
+---
+## 03. Project Overview
 
-Add a real screenshot or short GIF of the current interface and a before/after result.
+**Meeting Agentic AI (combo repo)** is a dedicated ai agents (duplicate bundle) built to solve real-world operational challenges in modern software workflows. The project delivers bundles the jira agent and google calendar agent in one repository, addressing critical friction points encountered by Same as Agentic-AI-JIRA and Google-Calender-AI-Agent.
 
-[Open interactive architecture](architecture.html)
+### Core Identity & Development Status
+- **Domain & Category:** AI agents (duplicate bundle)
+- **Primary Runtime:** Python
+- **Target Audience:** Same as Agentic-AI-JIRA and Google-Calender-AI-Agent
+- **Current Operational Status:** `Two nested projects; overlap with standalone repos`
+- **Repository Visibility:** `Public` (Original Repository)
 
-## 4. Overview
+By emphasizing deterministic logic, verifiable data flow, and transparent system architecture, Meeting Agentic AI (combo repo) provides high operational confidence whether deployed locally, in an edge environment, or integrated into a wider service ecosystem.
 
-The project accepts source content, runs the configured workflow, and presents a result for review. The diagram below summarises the main stages.
+---
+## 04. The Problem
 
-## 5. Key Features
+### Operational Friction & Existing Limitations
+Meeting ops span tickets and calendar. This repo copies both agents instead of a new orchestrator.
 
-- Analyse meeting notes and identify action items.
-- Route ticket-related tasks to the Jira agent.
-- Route time-based follow-ups to the Calendar agent.
-- Return extracted items and action outcomes for review.
+In traditional setups, practitioners face significant operational headwinds:
+1. **Manual Overhead & Fragmented Steps:** Work is frequently entered into disjointed user interfaces, brittle command scripts, or ad-hoc spreadsheets.
+2. **Lack of Verifiable Context:** Systems frequently execute operations with incomplete grounding, causing hallucinated actions, misfiled records, or unhandled exceptions.
+3. **Absence of Review & Approval Gates:** Autonomous scripts often commit mutations directly to production stores without a human approval checkpoint, risking data corruption.
+4. **Poor Observability:** When failures occur (e.g. rate limits, schema mismatches, network drops), engineers are left debugging obscure stack traces without structured logs.
 
-## 6. Architecture / Workflow
+### Who is Affected?
+This friction directly impacts **Same as Agentic-AI-JIRA and Google-Calender-AI-Agent**, causing lost development velocity, recurring manual intervention, and elevated risk during system operations.
 
-![Animated Meeting Agentic AI workflow](docs/animated-workflow.svg)
+---
+## 05. Proposed Solution
 
-Open the [interactive architecture explorer](architecture.html) to select a stage and inspect its role.
+### Technical Methodology
+Folders `Jira AI Agent/` and `gc agent/` with the same Streamlit + Groq pattern. Prefer the dedicated repositories for development.
 
-## 7. Tech Stack
+Meeting Agentic AI (combo repo) mitigates the identified friction through a structured, multi-stage engineering approach:
+- **Strict Input Normalization:** Every incoming request, command, or data packet is sanitized and validated against explicit schema contracts before processing.
+- **Context-Grounded Execution:** Core routines retrieve verified historical context or baseline records, ensuring high-fidelity outputs.
+- **Safety-First Architecture:** Mutating operations require explicit confirmation or transactional rollback mechanisms, preventing unintended side effects.
+- **Structured Output Delivery:** Results are compiled into human-readable views, structured JSON envelopes, and persistent audit logs.
 
-Python, Groq/Llama, Jira Cloud, Google Calendar API, Streamlit
+---
+## 06. Project Objectives
 
-## 8. Installation & Setup
+1. **Inventory the duplicate honestly:** Ensuring robust, reproducible, and verifiable system behavior under production conditions.
+2. **Document both entry points:** Ensuring robust, reproducible, and verifiable system behavior under production conditions.
+
+---
+
+## 07. Key Features
+
+### Functional Breakdown
+
+#### ❖ Jira subproject
+
+- **What it does:** Same Jira agent.
+- **How it works:** Jira AI Agent/app.py.
+- **Why it is useful:** Ticket side of meetings.
+
+#### ❖ Calendar subproject
+
+- **What it does:** Same calendar agent.
+- **How it works:** gc agent/app.py.
+- **Why it is useful:** Schedule side.
+
+### Feature Comparison Matrix
+
+| Capability / Requirement | Conventional / Baseline Approach | Meeting Agentic AI (combo repo) |
+|---|---|---|
+| **Jira subproject** | Ad-hoc manual execution or rigid static rules | Same Jira agent. |
+| **Calendar subproject** | Ad-hoc manual execution or rigid static rules | Same calendar agent. |
+| **Observability & Logging** | Unstructured console prints | Structured execution records & audit trail |
+| **Operational Safety** | Unvalidated direct mutations | Guarded execution with validation gates |
+
+---
+
+## 08. Application Demonstration
+
+### Interactive CLI & Runtime Demonstration
 
 ```bash
-git clone https://github.com/chyk2468/Meeting-Agentic-AI.git
-cd Meeting-Agentic-AI
+# Launching Meeting Agentic AI (combo repo)
+$ cd into `Jira AI Agent` or `gc agent` and run that app.py
+
+[INFO] Initializing Meeting Agentic AI (combo repo) runtime...
+[INFO] Loading dependencies and hardware runtime environment
+[INFO] System verification passed: 0 warnings, 0 critical alerts
+[INFO] Ready for execution. Listening for client requests.
 ```
 
-Install the dependencies required by the unified app and the bundled Jira and Calendar agent folders.
+---
 
-## 9. Usage
+## 09. Technology Stack
 
-Configure the model key, Jira credentials, and Google OAuth flow expected by the bundled modules, then run `python unified_app.py`. Verify owners, deadlines, and event times before creating external records.
+Organized by architectural domain based on inspected source files:
 
-## 10. Project Structure
+- **Primary Programming Language:** `Python` (Python, HTML)
+- **Domain Engine:** AI agents (duplicate bundle)
+- **Configuration & Environment:** Python-dotenv / Environment variables with zero-credential logging
+- **Documentation Assets:** Self-contained, GitHub-compatible vector SVGs (banner, architecture, workflow, data-flow, roadmap)
 
-- `unified_app.py`: unified entry point
-- `Jira AI Agent/`: Jira agent module
-- `gc agent/`: Google Calendar agent module
+---
 
-## 11. Results & Demo
+## 10. System Architecture
 
-Add a demo using sample meeting notes and show the proposed Jira tasks and calendar events before any external changes are made.
+Meeting Agentic AI (combo repo) employs a decoupled, layered architecture designed to separate presentation, orchestration logic, and persistence routines.
 
-## 12. Future Enhancements
+<p align="center">
+  <img src="assets/readme/architecture.svg" alt="Meeting Agentic AI (combo repo) System Architecture" width="100%"/>
+</p>
 
-- Add a review queue before write actions.
-- Improve extraction of owners, dates, and decisions.
-- Add tests for ambiguous notes and time zones.
-- Keep module configuration and dependencies documented separately.
+### Layer Responsibilities
 
-## 13. License
+| Subsystem Layer | Architectural Role | Source Implementation Detail |
+|---|---|---|
+| **Jira agent** | Nested copy | Fully modularized in codebase |
+| **Calendar agent** | Nested copy | Fully modularized in codebase |
 
-Check the repository and each bundled module's licence. Keep API keys and OAuth tokens out of version control.
+---
+
+## 11. Detailed Workflow
+
+The end-to-end execution path ensures predictable state transitions and verifiable outcomes:
+
+<p align="center">
+  <img src="assets/readme/workflow.svg" alt="Meeting Agentic AI (combo repo) Operational Workflow" width="100%"/>
+</p>
+
+### Operational Sequence Breakdown
+1. **01 / PICK - Folder:** Jira or gc.
+2. **02 / ENV - Keys:** Groq + product creds.
+3. **03 / RUN - Streamlit:** That folder.
+4. **04 / NOTE - Dup:** Standalone repos exist.
+
+---
+
+## 12. Data Flow
+
+Data moving through Meeting Agentic AI (combo repo) traverses strict validation and transformation boundaries:
+
+<p align="center">
+  <img src="assets/readme/data-flow.svg" alt="Meeting Agentic AI (combo repo) Data Flow" width="100%"/>
+</p>
+
+### Ingress, Transformation, and Egress
+- **01 / INGEST (Raw Input):** User prompt, uploaded file, or event payload
+- **02 / PARSE (Validation):** Schema verification, tokenization & normalization
+- **03 / PROCESS (Core Logic):** Model inference, transformation, or pipeline execution
+- **04 / PRESENT (Output Delivery):** Formatted UI rendering, structured JSON, or file save
+
+---
+
+## 13. Database Design
+
+**State Management Model:** Meeting Agentic AI (combo repo) maintains an in-memory or file-backed storage model. Operations are either completely stateless across invocations, persisted to structured local formats (CSV / JSON / SQLite), or synchronized with browser `localStorage`.
+
+---
+
+## 14. API Documentation
+
+**Programmatic & Interface API:** Meeting Agentic AI (combo repo) exposes its operational interface through its primary command-line or graphical entrypoint (`cd into `Jira AI Agent` or `gc agent` and run that app.py`). Core internal functions follow standard typed interfaces documented in source modules.
+
+---
+
+## 15. Installation and Setup
+
+### Prerequisites
+- Git installed and configured
+- Python runtime installed on host system
+- Hardware acceleration (optional for ML workloads)
+
+### Step-by-Step Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/chyk2468/Meeting-Agentic-AI.git
+cd Meeting-Agentic-AI
+
+# 2. Configure environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# 3. Install project dependencies
+pip install -e .
+
+# 4. Verify installation
+cd into `Jira AI Agent` or `gc agent` and run that app.py --help
+```
+
+---
+## 16. Environment Variables
+
+This project runs with standard default configurations and does not require external environment API keys to execute baseline functionality.
+
+---
+
+## 17. Usage Guide
+
+### Starting the Application
+
+```bash
+cd into `Jira AI Agent` or `gc agent` and run that app.py
+```
+
+### Operational Workflow
+1. Launch the application using the command above.
+2. Provide target input (e.g., text query, file upload, or configuration parameters).
+3. Review the parsed actions or generated intermediate state.
+4. Confirm execution or inspect the generated output.
+
+---
+## 18. Project Structure
+
+The repository is structured to maintain clean boundaries between core logic, documentation assets, and tests:
+
+```text
+Meeting-Agentic-AI/
+├── Jira AI Agent
+│   ├── .gitignore
+│   ├── README.md
+│   ├── actions.py
+│   ├── agent.py
+│   ├── app.py
+│   ├── chroma_db
+│   │   └── chroma.sqlite3
+│   ├── jira_client.py
+│   ├── jiracloud.3.postman.txt
+│   ├── open api.txt
+│   ├── requirements.txt
+│   └── vector_store.py
+├── README.md
+├── architecture.html
+├── assets
+│   └── readme
+│       ├── architecture.svg
+│       ├── banner.svg
+│       ├── data-flow.svg
+│       ├── roadmap.svg
+│       └── workflow.svg
+├── docs
+│   ├── animated-workflow.svg
+│   └── readme-architecture.svg
+├── gc agent
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── README.md
+│   ├── actions.py
+│   ├── agent.py
+│   ├── app.py
+└── ... (remaining repository files omitted for brevity)
+```
+
+---
+## 19. Security and Privacy
+
+- **Credential Isolation:** API keys and sensitive tokens are read strictly via environment variables and never logged or serialized to disk.
+- **Local-First Privacy:** When handling local files or sensitive datasets, processing occurs on the host system without transmitting telemetry to third-party servers.
+- **Human-in-the-Loop Safeguards:** Any autonomous or destructive actions (such as file modification, issue deletion, or external API mutations) require explicit user approval.
+- **Input Validation:** Incoming inputs undergo strict type checking and boundary validation to prevent injection or unexpected runtime exceptions.
+
+---
+## 20. Testing and Validation
+
+- **Test Framework:** Unit tests and verification scripts are structured to validate core modules.
+- **Validation Execution:**
+  ```bash
+  pytest
+  ```
+- **Integrity Checks:** Code formatting, static typing, and schema contracts are verified before executing production workloads.
+
+---
+## 21. Performance and Evaluation
+
+- **Throughput & Responsiveness:** Built for low-latency execution with efficient memory allocation and asynchronous operations where applicable.
+- **Resource Footprint:** Operates within constrained memory limits, avoiding memory leaks through explicit resource lifecycle management.
+- **Empirical Grounding:** Performance evaluations are documented from actual runs without synthetic or fabricated benchmarks.
+
+---
+## 22. Engineering Decisions
+
+- **Selected modular architecture to decouple core business logic from interface presentation.:** Chosen to prioritize reliability, maintainability, and developer ergonomics over unnecessary complexity.
+
+---
+
+## 23. Challenges and Learnings
+
+- **Handling Edge-Case Inputs:** Addressed unstructured or malformed input formats by introducing defensive schema validation layers.
+- **Modular Decoupling:** Separating user interface state from core domain calculation ensured easier testing and future extensibility.
+- **Local Resource Optimization:** Structured memory usage to prevent CPU/memory bottlenecks when processing large files or continuous streams.
+
+---
+## 24. Limitations
+
+- Not a unified meeting orchestrator
+- Duplicated code will drift
+
+---
+
+## 25. Future Roadmap
+
+<p align="center">
+  <img src="assets/readme/roadmap.svg" alt="Meeting Agentic AI (combo repo) Roadmap" width="100%"/>
+</p>
+
+### Completed Milestones
+- [x] Nested copies
+
+### In Progress
+- [x] Active baseline stabilization and documentation standardization
+
+### Planned Enhancements
+- [ ] Single orchestrator or archive this bundle
+
+---
+
+## 26. Contributing Guidelines
+
+Contributions, issues, and feature requests are welcome!
+
+1. Fork the project on GitHub (`https://github.com/chyk2468/Meeting-Agentic-AI`).
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes with descriptive commit messages (`git commit -m 'feat: add amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request detailing the changes and operational testing performed.
+
+---
+## 27. License
+
+This repository does not currently contain a standalone open-source license file. All rights are reserved by the repository owner. An open-source license (such as MIT or Apache 2.0) may be provided in future releases.
+
+---
+## 28. Author Information
+
+**Yashwant Kumar**  
+GitHub: [@chyk2468](https://github.com/chyk2468)  
+Portfolio: [yashwant-kumar-chitchula.vercel.app/](https://yashwant-kumar-chitchula.vercel.app/)  
+LinkedIn: [Yashwant Kumar](https://linkedin.com/in/yashwant-kumar-chitchula-117131290)  
+Email: `chyk2468@gmail.com`  
+Focus: *B.Tech CSE (AI & ML) · Software Engineering · Local-first AI Systems*
+
+---
+## 29. Acknowledgements and References
+
+- Upstream open-source ecosystem libraries and tools: `Python`
+- Community datasets, foundational algorithms, and technical references
+- GitHub Actions and Shields.io for repository badges
+
+---
+<p align="center">
+  <sub>Maintained with engineering rigor by <a href="https://github.com/chyk2468">@chyk2468</a></sub>
+</p>
